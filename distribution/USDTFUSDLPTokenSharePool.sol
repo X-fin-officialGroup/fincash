@@ -65,13 +65,13 @@ import '../interfaces/IRewardDistributionRecipient.sol';
 import '../token/LPTokenWrapper.sol';
 
 contract USDTFUSDLPTokenSharePool is
-    LPTokenWrapper,
-    IRewardDistributionRecipient
+LPTokenWrapper,
+IRewardDistributionRecipient
 {
     IERC20 public mithShare;
     uint256 public constant DURATION = 30 days;
 
-    uint256 public initreward = 1848000 * 10**18; // 831600 Shares
+    uint256 public initreward = 1848000 * 10 ** 18; // 831600 Shares
     uint256 public starttime; // starttime TBD
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
@@ -117,30 +117,30 @@ contract USDTFUSDLPTokenSharePool is
             return rewardPerTokenStored;
         }
         return
-            rewardPerTokenStored.add(
-                lastTimeRewardApplicable()
-                    .sub(lastUpdateTime)
-                    .mul(rewardRate)
-                    .mul(1e18)
-                    .div(totalSupply())
-            );
+        rewardPerTokenStored.add(
+            lastTimeRewardApplicable()
+            .sub(lastUpdateTime)
+            .mul(rewardRate)
+            .mul(1e18)
+            .div(totalSupply())
+        );
     }
 
     function earned(address account) public view returns (uint256) {
         return
-            balanceOf(account)
-                .mul(rewardPerToken().sub(userRewardPerTokenPaid[account]))
-                .div(1e18)
-                .add(rewards[account]);
+        balanceOf(account)
+        .mul(rewardPerToken().sub(userRewardPerTokenPaid[account]))
+        .div(1e18)
+        .add(rewards[account]);
     }
 
     // stake visibility is public as overriding LPTokenWrapper's stake() function
     function stake(uint256 amount)
-        public
-        override
-        updateReward(msg.sender)
-        checkhalve
-        checkStart
+    public
+    override
+    updateReward(msg.sender)
+    checkhalve
+    checkStart
     {
         require(amount > 0, 'Cannot stake 0');
         super.stake(amount);
@@ -148,11 +148,11 @@ contract USDTFUSDLPTokenSharePool is
     }
 
     function withdraw(uint256 amount)
-        public
-        override
-        updateReward(msg.sender)
-        checkhalve
-        checkStart
+    public
+    override
+    updateReward(msg.sender)
+    checkhalve
+    checkStart
     {
         require(amount > 0, 'Cannot withdraw 0');
         super.withdraw(amount);
@@ -175,7 +175,7 @@ contract USDTFUSDLPTokenSharePool is
         }
     }
 
-    	 {
+    modifier checkhalve() {
         if (block.timestamp >= periodFinish) {
             initreward = initreward.mul(75).div(100);
 
@@ -192,10 +192,10 @@ contract USDTFUSDLPTokenSharePool is
     }
 
     function notifyRewardAmount(uint256 reward)
-        external
-        override
-        onlyRewardDistribution
-        updateReward(address(0))
+    external
+    override
+    onlyRewardDistribution
+    updateReward(address(0))
     {
         if (block.timestamp > starttime) {
             if (block.timestamp >= periodFinish) {
