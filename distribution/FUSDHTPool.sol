@@ -173,7 +173,7 @@ contract FUSDHTPool is HTWrapper, IRewardDistributionRecipient {
     {
         require(amount > 0, 'FUSDHTPool: Cannot stake 0');
         uint256 newDeposit = deposits[msg.sender].add(amount);
-        require(newDeposit < maxStakeAmount, 'FUSDHTPool: Cannot stake exceed maxStakeAmount');
+        require(newDeposit <= maxStakeAmount, 'FUSDHTPool: Cannot stake exceed maxStakeAmount');
 
         deposits[msg.sender] = newDeposit;
         super.stake(amount);

@@ -172,7 +172,7 @@ contract FUSDUSDTPool is USDTWrapper, IRewardDistributionRecipient {
     {
         require(amount > 0, 'FUSDBAGSPool: Cannot stake 0');
         uint256 newDeposit = deposits[msg.sender].add(amount);
-        require(newDeposit < maxStakeAmount, 'FUSDBAGSPool: Cannot stake exceed maxStakeAmount');
+        require(newDeposit <= maxStakeAmount, 'FUSDBAGSPool: Cannot stake exceed maxStakeAmount');
 
         deposits[msg.sender] = newDeposit;
         super.stake(amount);

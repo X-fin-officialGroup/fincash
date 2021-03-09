@@ -172,7 +172,7 @@ contract FUSDHBTCPool is HBTCWrapper, IRewardDistributionRecipient {
     {
         require(amount > 0, 'FUSDHBTCPool: Cannot stake 0');
         uint256 newDeposit = deposits[msg.sender].add(amount);
-        require(newDeposit < maxStakeAmount, 'FUSDHBTCPool: Cannot stake exceed maxStakeAmount');
+        require(newDeposit <= maxStakeAmount, 'FUSDHBTCPool: Cannot stake exceed maxStakeAmount');
 
         deposits[msg.sender] = newDeposit;
         super.stake(amount);

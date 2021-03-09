@@ -93,9 +93,9 @@ contract Treasury is ContractGuard, Epoch {
     modifier checkOperator {
         require(
             IBasisAsset(cash).operator() == address(this) &&
-                IBasisAsset(bond).operator() == address(this) &&
-                IBasisAsset(share).operator() == address(this) &&
-                Operator(boardroom).operator() == address(this),
+            IBasisAsset(bond).operator() == address(this) &&
+            IBasisAsset(share).operator() == address(this) &&
+            Operator(boardroom).operator() == address(this),
             'Treasury: need more permission'
         );
 
@@ -120,107 +120,84 @@ contract Treasury is ContractGuard, Epoch {
 
     function _getCashPrice(address oracle) internal view returns (uint256) {
         try IOracle(oracle).consult(cash, 1e18) returns (uint256 price) {
-            return price; // for USDT decimal
-        } catch {
-            revert('Treasury: failed to consult cash price from the oracle');
-        }
+    return price; // for USDT decimal
+    } catch {
+    revert('Treasury: failed to consult cash price from the oracle');
+    }
     }
 
     /* ========== GOVERNANCE ========== */
 
     function initialize() public checkOperator {
-        require(!initialized, 'Treasury: initialized');
+    require(!initialized, 'Treasury: initialized');
 
-        // set accumulatedSeigniorage to it's balance
-        accumulatedSeigniorage = IERC20(cash).balanceOf(address(this));
+    // set accumulatedSeigniorage to it's balance
+    accumulatedSeigniorage = IERC20(cash).balanceOf(address(this));
 
-        initialized = true;
-        emit Initialized(msg.sender, block.number);
+    initialized = true;
+    emit Initialized(msg.sender, block.number);
     }
 
     function migrate(address target) public onlyOperator checkOperator {
-        require(!migrated, 'Treasury: migrated');
+    require(!migrated, 'Treasury: migrated');
 
-        // cash
-        Operator(cash).transferOperator(target);
-        Operator(cash).transferOwnership(target);
-        IERC20(cash).transfer(target, IERC20(cash).balanceOf(address(this)));
+    // cash
+    Operator(cash).transferOperator(target);
+    Operator(cash).transferOwnership(target);
+    IERC20(cash).transfer(target, IERC20(cash).balanceOf(address(this)));
 
-        // bond
-        Operator(bond).transferOperator(target);
-        Operator(bond).transferOwnership(target);
-        IERC20(bond).transfer(target, IERC20(bond).balanceOf(address(this)));
+    // bond
+    Operator(bond).transferOperator(target);
+    Operator(bond).transferOwnership(target);
+    IERC20(bond).transfer(target, IERC20(bond).balanceOf(address(this)));
 
-        // share
-        Operator(share).transferOperator(target);
-        Operator(share).transferOwnership(target);
-        IERC20(share).transfer(target, IERC20(share).balanceOf(address(this)));
+    // share
+    Operator(share).transferOperator(target);
+    Operator(share).transferOwnership(target);
+    IERC20(share).transfer(target, IERC20(share).balanceOf(address(this)));
 
-        migrated = true;
-        emit Migration(target);
+    migrated = true;
+    emit Migration(target);
     }
 
     function setFund(address newFund) public onlyOperator {
-        fund = newFund;
-        emit ContributionPoolChanged(msg.sender, newFund);
+    fund = newFund;
+    emit ContributionPoolChanged(msg.sender, newFund);
     }
 
-    function setFundAllocationRate(uint256 rate) public onlyOperator {
+        function setFundAllocationRate(uint256 rate) public onlyOperator {
         fundAllocationRate = rate;
         emit ContributionPoolRateChanged(msg.sender, rate);
-    }
+        }
 
-    function setMaxInflationRate(uint256 rate) public onlyOperator {
-        maxInflationRate = rate;
-        emit MaxInflationRateChanged(msg.sender, rate);
-    }
-
-    function setCashPrice(uint256 price) public onlyOperator {
+        function setCashPrice() public checkOperator {
+        _updateCashPrice();
+        uint256 price = getBondOraclePrice();
         Cash(cash).setPrice(price);
         emit CashPriceChanged(msg.sender, price);
-    }
+        }
 
-    function setCashRate(uint256 rate) public onlyOperator {
-        Cash(cash).setRate(rate);
-        emit CashRateChanged(msg.sender, rate);
-    }
+        /* ========== MUTABLE FUNCTIONS ========== */
 
-    function setCashFeeAddress(address feeAddress) public onlyOperator {
-        Cash(cash).setFeeAddress(feeAddress);
-        emit CashFeeAddressChanged(msg.sender, feeAddress);
-    }
-
-    function addCashFeeBlackList(address userAddress) public onlyOperator {
-        Cash(cash).addBlackList(userAddress);
-        emit CashFeeAddBlackList(msg.sender, userAddress);
-    }
-
-    function removeCashFeeBlackList(address userAddress) public onlyOperator {
-        Cash(cash).removeBlackList(userAddress);
-        emit CashFeeRemoveBlackList(msg.sender, userAddress);
-    }
-
-    /* ========== MUTABLE FUNCTIONS ========== */
-
-    function _updateCashPrice() internal {
+        function _updateCashPrice() internal {
         try IOracle(bondOracle).update()  {} catch {}
         try IOracle(seigniorageOracle).update()  {} catch {}
-    }
+        }
 
-    function buyBonds(uint256 amount, uint256 targetPrice)
+        function buyBonds(uint256 amount, uint256 targetPrice)
         external
         onlyOneBlock
         checkMigration
         checkStartTime
         checkOperator
-    {
+        {
         require(amount > 0, 'Treasury: cannot purchase bonds with zero amount');
 
         uint256 cashPrice = _getCashPrice(bondOracle);
         require(cashPrice == targetPrice, 'Treasury: cash price moved');
         require(
-            cashPrice < cashPriceCanBuyBond, // price < $0.95
-            'Treasury: cashPrice not eligible for bond purchase'
+        cashPrice < cashPriceCanBuyBond, // price < $0.95
+        'Treasury: cashPrice not eligible for bond purchase'
         );
 
         uint256 bondPrice = cashPrice;
@@ -230,30 +207,30 @@ contract Treasury is ContractGuard, Epoch {
         _updateCashPrice();
 
         emit BoughtBonds(msg.sender, amount);
-    }
+        }
 
-    function redeemBonds(uint256 amount, uint256 targetPrice)
+        function redeemBonds(uint256 amount, uint256 targetPrice)
         external
         onlyOneBlock
         checkMigration
         checkStartTime
         checkOperator
-    {
+        {
         require(amount > 0, 'Treasury: cannot redeem bonds with zero amount');
 
         uint256 cashPrice = _getCashPrice(bondOracle);
         require(cashPrice == targetPrice, 'Treasury: cash price moved');
         require(
-            cashPrice > cashPriceCeiling, // price > $1.01
-            'Treasury: cashPrice not eligible for bond purchase'
+        cashPrice > cashPriceCeiling, // price > $1.01
+        'Treasury: cashPrice not eligible for bond purchase'
         );
         require(
-            IERC20(cash).balanceOf(address(this)) >= amount,
-            'Treasury: treasury has no more budget'
+        IERC20(cash).balanceOf(address(this)) >= amount,
+        'Treasury: treasury has no more budget'
         );
 
         accumulatedSeigniorage = accumulatedSeigniorage.sub(
-            Math.min(accumulatedSeigniorage, amount)
+        Math.min(accumulatedSeigniorage, amount)
         );
 
         IBasisAsset(bond).burnFrom(msg.sender, amount);
@@ -261,88 +238,83 @@ contract Treasury is ContractGuard, Epoch {
         _updateCashPrice();
 
         emit RedeemedBonds(msg.sender, amount);
-    }
+        }
 
-    function allocateSeigniorage()
+        function allocateSeigniorage()
         external
         onlyOneBlock
         checkMigration
         checkStartTime
         checkEpoch
         checkOperator
-    {
+        {
         _updateCashPrice();
         uint256 cashPrice = _getCashPrice(seigniorageOracle);
         if (cashPrice <= cashPriceCeiling) {
-            return; // just advance epoch instead revert
+        return; // just advance epoch instead revert
         }
 
         // circulating supply
         uint256 cashSupply = IERC20(cash).totalSupply().sub(
-            accumulatedSeigniorage
+        accumulatedSeigniorage
         );
         uint256 percentage = cashPrice.sub(cashPriceOne);
         uint256 seigniorage = cashSupply.mul(percentage).div(1e18);
         uint256 maxSeigniorage = cashSupply.mul(maxInflationRate).div(100);
         if (seigniorage > maxSeigniorage) {
-            seigniorage = maxSeigniorage;
+        seigniorage = maxSeigniorage;
         }
         IBasisAsset(cash).mint(address(this), seigniorage);
 
         // ======================== BIP-3
         uint256 fundReserve = seigniorage.mul(fundAllocationRate).div(100);
         if (fundReserve > 0) {
-            IERC20(cash).safeApprove(fund, fundReserve);
-            ISimpleERCFund(fund).deposit(
-                cash,
-                fundReserve,
-                'Treasury: Seigniorage Allocation'
-            );
-            emit ContributionPoolFunded(now, fundReserve);
+        IERC20(cash).safeApprove(fund, fundReserve);
+        ISimpleERCFund(fund).deposit(
+        cash,
+        fundReserve,
+        'Treasury: Seigniorage Allocation'
+        );
+        emit ContributionPoolFunded(now, fundReserve);
         }
 
         seigniorage = seigniorage.sub(fundReserve);
 
         // ======================== BIP-4
         uint256 treasuryReserve = Math.min(
-            seigniorage,
-            IERC20(bond).totalSupply().sub(accumulatedSeigniorage)
+        seigniorage,
+        IERC20(bond).totalSupply().sub(accumulatedSeigniorage)
         );
         if (treasuryReserve > 0) {
-            if (treasuryReserve == seigniorage) {
-                treasuryReserve = treasuryReserve.mul(80).div(100);
-            }
-            accumulatedSeigniorage = accumulatedSeigniorage.add(
-                treasuryReserve
-            );
-            emit TreasuryFunded(now, treasuryReserve);
+        if (treasuryReserve == seigniorage) {
+        treasuryReserve = treasuryReserve.mul(80).div(100);
+        }
+        accumulatedSeigniorage = accumulatedSeigniorage.add(
+        treasuryReserve
+        );
+        emit TreasuryFunded(now, treasuryReserve);
         }
 
         // boardroom
         uint256 boardroomReserve = seigniorage.sub(treasuryReserve);
         if (boardroomReserve > 0) {
-            IERC20(cash).safeApprove(boardroom, boardroomReserve);
-            IBoardroom(boardroom).allocateSeigniorage(boardroomReserve);
-            emit BoardroomFunded(now, boardroomReserve);
+        IERC20(cash).safeApprove(boardroom, boardroomReserve);
+        IBoardroom(boardroom).allocateSeigniorage(boardroomReserve);
+        emit BoardroomFunded(now, boardroomReserve);
         }
-    }
+        }
 
-    // GOV
-    event Initialized(address indexed executor, uint256 at);
-    event Migration(address indexed target);
-    event ContributionPoolChanged(address indexed operator, address newFund);
-    event ContributionPoolRateChanged(address indexed operator, uint256 newRate);
-    event MaxInflationRateChanged(address indexed operator, uint256 newRate);
-    event CashPriceChanged(address indexed operator, uint256 newPrice);
-    event CashRateChanged(address indexed operator, uint256 newRate);
-    event CashFeeAddressChanged(address indexed operator, address newFeeAddress);
-    event CashFeeAddBlackList(address indexed operator, address user);
-    event CashFeeRemoveBlackList(address indexed operator, address user);
+        // GOV
+        event Initialized(address indexed executor, uint256 at);
+        event Migration(address indexed target);
+        event ContributionPoolChanged(address indexed operator, address newFund);
+        event ContributionPoolRateChanged(address indexed operator, uint256 newRate);
+        event CashPriceChanged(address indexed operator, uint256 newPrice);
 
-    // CORE
-    event RedeemedBonds(address indexed from, uint256 amount);
-    event BoughtBonds(address indexed from, uint256 amount);
-    event TreasuryFunded(uint256 timestamp, uint256 seigniorage);
-    event BoardroomFunded(uint256 timestamp, uint256 seigniorage);
-    event ContributionPoolFunded(uint256 timestamp, uint256 seigniorage);
+        // CORE
+        event RedeemedBonds(address indexed from, uint256 amount);
+        event BoughtBonds(address indexed from, uint256 amount);
+        event TreasuryFunded(uint256 timestamp, uint256 seigniorage);
+        event BoardroomFunded(uint256 timestamp, uint256 seigniorage);
+        event ContributionPoolFunded(uint256 timestamp, uint256 seigniorage);
 }

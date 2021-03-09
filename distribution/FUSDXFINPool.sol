@@ -172,7 +172,7 @@ contract FUSDXFINPool is XFINWrapper, IRewardDistributionRecipient {
     {
         require(amount > 0, 'FUSDXFINPool: Cannot stake 0');
         uint256 newDeposit = deposits[msg.sender].add(amount);
-        require(newDeposit < maxStakeAmount, 'FUSDXFINPool: Cannot stake exceed maxStakeAmount');
+        require(newDeposit <= maxStakeAmount, 'FUSDXFINPool: Cannot stake exceed maxStakeAmount');
 
         deposits[msg.sender] = newDeposit;
         super.stake(amount);
