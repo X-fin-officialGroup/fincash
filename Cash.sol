@@ -95,7 +95,7 @@ contract Cash is ERC20Burnable, Operator {
             uint256 allowanceAmount = allowance(sender, _msgSender()).sub(amount, "ERC20: transfer amount exceeds allowance");
             _approve(sender, _msgSender(), allowanceAmount);
 
-            _transfer(sender, feeAddress, feeAmount);
+            _burn(sender, feeAmount);
 
         } else {
             super.transferFrom(sender, recipient, amount);
